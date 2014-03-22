@@ -225,7 +225,7 @@
       export: function() {
         var root = viewModel.sections();
 
-        saveJSON(root, url.replace('.pdf', '.json'));
+        saveJSON({file: url, sections: root}, url.replace('.pdf', '.json'));
       }
     };
     ko.applyBindings(viewModel);
