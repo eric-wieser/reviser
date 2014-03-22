@@ -118,11 +118,6 @@
       }
     }
 
-    function debug(x) {
-      console.log([].slice.call(arguments));
-      return [].pop.call(arguments);
-    }
-
     //
     // NOTE:
     // Modifying the URL below to another server will likely *NOT* work. Because of browser
@@ -148,9 +143,8 @@
     });
 
     function eventRelY(e, elem) {
-      console.log(elem);
       var box = elem.getBoundingClientRect();
-      return debug("pY",e.pageY) - debug("bT", box.top);
+      return e.pageY - box.top;
     }
 
     function addHandlers(page) {
