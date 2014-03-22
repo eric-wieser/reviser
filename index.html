@@ -49,11 +49,23 @@
       display: block;
       margin: 10px;
     }
+
+    #question-wrapper .page:not(.question) {
+      margin-right: 100px;
+    }
+    #question-wrapper .page.question {
+      margin-left: 100px;
+    }
   </style>
 </head>
 <body>
   <div id="document-wrapper"></div>
-  <div id="question-wrapper"></div>
+  <div id="question-wrapper">
+    <div style="overflow: hidden; margin: 10px">
+      <strong style="float: left">Info</strong>
+      <strong style="float: right">Questions and figures</strong>
+    </div>
+  </div>
 
   <!-- Use latest PDF.js build from Github -->
   <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
@@ -131,6 +143,9 @@
     var questWrap = $('#question-wrapper');
 
     var highlight = null;
+    questWrap.on('click', '.page', function() {
+      $(this).toggleClass('question');
+    });
 
     function eventRelY(e, elem) {
       console.log(elem);
