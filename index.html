@@ -75,7 +75,7 @@
     .page .slice .split-button {
       visibility: hidden;
       position: absolute;
-      top: -25px;
+      top: -20px;
     }
 
     .page .merge-button {
@@ -83,6 +83,13 @@
       top: -25px;
       z-index: 1;
       visibility: hidden;
+    }
+
+    .page .delete-button {
+      visibility: hidden;
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
     }
     .page.question .merge-button,
     .page.question .split-button { right: 10px; }
@@ -93,7 +100,18 @@
     .page.question       + .page.question:hover .merge-button,
     .page.info:hover     + .page.info           .merge-button,
     .page.info           + .page.info:hover     .merge-button,
-    .page:hover .slice + .slice .split-button { visibility: visible; }
+    .page:hover .slice + .slice .split-button,
+    .page:hover .delete-button { visibility: visible; }
+
+    .slice + .slice {
+      border-top: 1px solid #808080;
+    }
+
+
+    .export-button {
+      margin: 10px auto;
+      display: block;
+    }
   </style>
 
   <!-- Use latest PDF.js build from Github -->
@@ -125,15 +143,7 @@
             <canvas data-bind="pageSliceRender: _slice"></canvas>
           </div>
         </div>
-        <div class="btn-toolbar" role="toolbar">
-          <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-default">Question</button>
-            <button type="button" class="btn btn-sm btn-default">Other</button>
-          </div>
-          <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-default"><span class="glyphicon glyphicon-remove"></span></button>
-          </div>
-        </div>
+        <button type="button" class="btn btn-md btn-danger delete-button" data-bind="click: $root.deleteSection"><span class="glyphicon glyphicon-remove"></span></button>
       </div>
     </div>
   </div>
@@ -156,6 +166,8 @@
           slice.type = 'info';
         else
           slice.type = 'question';
+
+        event.preventDefault();
       },
       splitSection: function(current, event) {
         var context = ko.contextFor(event.target);
@@ -171,6 +183,7 @@
         // after the current one
         var j = viewModel.sections.indexOf(section);
         viewModel.sections.splice(j+1, 0, newSection);
+        viewModel.sections.sort(Section.sortFunc);
 
         event.stopPropagation();
       },
@@ -186,6 +199,19 @@
 
         // and delete the section
         viewModel.sections.splice(i, 1);
+
+        event.stopPropagation();
+      },
+      deleteSection: function(current, event) {
+        var context = ko.contextFor(event.target);
+
+        var i = context.$index();
+        viewModel.sections.splice(i, 1);
+
+        current.slices.each(function(s) {
+          // TODO: handle with knockout
+          s.highlight.detach();
+        });
 
         event.stopPropagation();
       }
@@ -365,9 +391,18 @@
       page.on('click', '.highlight:not(.chosen)', function() {
         var highlight = $(this).data('highlight');
 
-        $(this).addClass('chosen');
 
-        var pageSlice = processHighlight(highlight);
+        try {
+          var pageSlice = processHighlight(highlight);
+        }
+        catch (e) {
+          // selection invalid
+          highlight.detach();
+          return
+        }
+
+        $(this).addClass('chosen');
+        pageSlice.highlight = highlight;
 
         var section = new Section('question', [pageSlice]);
 
@@ -428,9 +463,7 @@
       var lir = lastInterestingRow(imageData);
       var fir = firstInterestingRow(imageData);
       if(lir == null || fir == null) {
-        alert("Empty selection");
-        h.remove();
-        return;
+        throw Error("Empty selection");
       }
 
       var trimmedSlice = new Slice(
