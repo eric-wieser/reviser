@@ -111,3 +111,33 @@ Highlight.prototype = {
     this.redraw();
   }
 }
+
+// deserialization
+Section.loadFrom = function(json, pdf) {
+  return Promise.all(
+    json.slices.map(function(s) {
+      return PageSlice.loadFrom(s, pdf)
+    })
+  ).then(function(slices) {
+    return new Section(json.type, slices);
+  });
+}
+
+PageSlice.loadFrom = function(json, pdf) {
+  return pdf.getPage(json.page).then(function(page) {
+    return new PageSlice(
+      new Slice(json.from, json.to),
+      page
+    )
+  });
+}
+
+var loadFromJSON = function(json) {
+  return PDFJS.getDocument(json.file).then(function(pdf) {
+    return Promise.all(
+      json.sections.map(function(sectionJson) {
+        return Section.loadFrom(sectionJson, pdf)
+      })
+    );
+  })
+}
