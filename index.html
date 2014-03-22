@@ -72,6 +72,8 @@
   <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
   <script type="text/javascript" src="sugar.min.js"></script>
   <script type="text/javascript" src="http://code.jquery.com/jquery-git2.js"></script>
+  <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.0.0.js"></script>
+  <script type="text/javascript" src="knockout-es5.min.js"></script>
 </head>
 <body>
   <div id="document-wrapper"></div>
@@ -79,10 +81,36 @@
     <div style="overflow: hidden; margin: 10px">
       <strong style="float: left">Info</strong>
       <strong style="float: right">Questions and figures</strong>
+      <div data-bind="foreach: { data: slices }">
+        <div class="page" data-bind="css: $data.type, click: $parent.toggleSliceType">
+          <canvas data-bind="pageSliceRender: $data"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
 
+  <script type="text/javascript">
+    // Tell knockout how to render a pageSlice
+    ko.bindingHandlers.pageSliceRender = {
+      init: function(element, valueAccessor) {
+        var slice = ko.unwrap(valueAccessor());
+        slice.render(element);
+      }
+    };
+
+    // initialize knockout.js
+    var viewModel = {
+      slices: ko.observableArray([]),
+      toggleSliceType: function(slice) {
+        if(slice.type == 'question')
+          slice.type = 'info';
+        else
+          slice.type = 'question';
+      }
+    };
+    ko.applyBindings(viewModel);
+  </script>
 
   <script type="text/javascript">
     var Slice = function(a, b) {
@@ -105,6 +133,9 @@
     var PageSlice = function(slice, page) {
       this.slice = slice;
       this.page = page;
+      this.type = 'question';
+
+      ko.track(this);
     }
 
     PageSlice.prototype.render = function(canvas) {
@@ -134,6 +165,11 @@
         return this.slice.start > other.slice.start; // coordinates decrease down the page
       else
         return this.page.pageNumber < other.page.pageNumber;
+    }
+
+    PageSlice.sortFunc = function(a, b) {
+      return a.startsBefore(b) ? -1 :
+             b.startsBefore(a) ?  1 : 0
     }
 
     var Highlight = function(slice) {
@@ -181,10 +217,6 @@
 
     var docWrap = $('#document-wrapper');
     var questWrap = $('#question-wrapper');
-
-    questWrap.on('click', '.page', function() {
-      $(this).toggleClass('question');
-    });
 
     var activeHighlight = null;
     var lastHighlight = null;
@@ -239,26 +271,8 @@
 
         var pageSlice = processSlice(highlight.target, highlight.slice);
 
-        // render to HTML/canvas
-        var c;
-        var snippetElem = $('<div>').addClass('page').addClass('question').append(
-          c = $('<canvas>')
-        );
-        pageSlice.render(c[0]);
-        snippetElem.data('slice', pageSlice);
-
-        // insert the slice in the right order
-        var inserted = false;
-        questWrap.children('.page').each(function() {
-          var d = $(this).data('slice');
-          if(!inserted && d && !d.startsBefore(pageSlice)) {
-            snippetElem.insertBefore(this)
-            inserted = true;
-          }
-        });
-        if(!inserted) {
-          questWrap.append(snippetElem);
-        }
+        viewModel.slices.push(pageSlice);
+        viewModel.slices.sort(PageSlice.sortFunc);
 
         return false;
       });
