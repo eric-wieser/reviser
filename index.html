@@ -41,6 +41,12 @@
       left: 0;
       right: 0;
     }
+
+    #document-wrapper .page .highlight.chosen {
+      background: rgba(128, 128, 128, 0.5);
+      border-top: 1px solid rgb(128, 128, 128);
+      border-bottom: 1px solid rgb(128, 128, 128);
+    }
     .add-page {
       text-align: center;
       padding: 10px;
@@ -124,6 +130,7 @@
       else
         return this.page.pageNumber < other.page.pageNumber;
     }
+
     var Highlight = function(slice) {
       this.slice = slice;
       this.$elem = $('<div>').addClass('highlight');
@@ -170,10 +177,12 @@
     var docWrap = $('#document-wrapper');
     var questWrap = $('#question-wrapper');
 
-    var highlight = null;
     questWrap.on('click', '.page', function() {
       $(this).toggleClass('question');
     });
+
+    var activeHighlight = null;
+    var lastHighlight = null;
 
     function eventRelY(e, elem) {
       var box = elem.getBoundingClientRect();
@@ -184,27 +193,39 @@
       page
       .on('mousedown', function(e) {
         var y = eventRelY(e, this);
-        highlight = new Highlight(new Slice(y, y));
-        highlight.attach(this);
+        $(this).find('.highlight:not(.chosen)').remove()
+        activeHighlight = new Highlight(new Slice(y, y));
+        activeHighlight.attach(this);
         return false;
       })
       .on('mousemove', function(e) {
-        if(!highlight) return;
-        highlight.updateFromEvent(e);
+        if(!activeHighlight) return;
+        activeHighlight.updateFromEvent(e);
       })
 
 
       $('body').on('mouseup', function(e) {
-        if(!highlight) return;
-        highlight.updateFromEvent(e);
-        highlight = null;
+        if(!activeHighlight) return;
+        activeHighlight.updateFromEvent(e);
+        activeHighlight = null;
       })
       .on('mousemove', function(e) {
-        if(!highlight) return;
-        highlight.updateFromEvent(e);
-      })
+        if(!activeHighlight) return;
+        activeHighlight.updateFromEvent(e);
+      });
 
       page.on('mousedown', '.highlight', function() {
+        return false;
+      });
+      page.on('mousemove', '.highlight', function() {
+        if($(this).data('highlight') == activeHighlight) return;
+        return false;
+      });
+      page.on('mouseup', '.highlight', function() {
+        if($(this).data('highlight') == activeHighlight) return;
+        activeHighlight = null;
+        return false;
+      });
 
       page.on('click', '.highlight:not(.chosen)', function() {
         var highlight = $(this).data('highlight');
