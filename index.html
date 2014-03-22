@@ -248,7 +248,14 @@
       canvas.height = newVP.height;
       canvas.width = newVP.width;
 
-      this.page.render({canvasContext: context, viewport: newVP});
+      if(this._lastCanvas && this._lastCanvas.width == canvas.width && this._lastCanvas.height == canvas.height) {
+        context.drawImage(this._lastCanvas, 0, 0);
+      }
+      else {
+        this.page.render({canvasContext: context, viewport: newVP});
+
+        this._lastCanvas = canvas;
+      }
     }
 
     PageSlice.prototype.startsBefore = function(other) {
