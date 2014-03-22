@@ -1,8 +1,6 @@
 <html>
 <body>
   <div id="document-wrapper"></div>
-  <canvas id="main-document"></canvas>
-  <canvas id="question"></canvas>
 
   <!-- Use latest PDF.js build from Github -->
   <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
@@ -19,11 +17,23 @@
     background: gray;
     overflow: scroll;
   }
-  #document-wrapper canvas {
+  #document-wrapper .page {
     margin: 10px;
     box-shadow: 0 0 5px black;
     border: 1px solid #808080;
+    float: left;
+    position: relative;
+  }
+  #document-wrapper .page canvas {
     display: block;
+  }
+  #document-wrapper .page .highlight {
+    display: block;
+    background: rgba(255, 255, 0, 0.5);
+    border: 1px solid rgba(255, 255, 0, 0.5);
+    position: absolute;
+    left: 0;
+    right: 0;
   }
   </style>
 
@@ -43,8 +53,47 @@
     //
     PDFJS.disableWorker = true;
 
-    var canvas = document.getElementById('main-document');
-    var context = canvas.getContext('2d');
+
+    var $highlight = $('<div>').addClass('highlight');
+    function redrawHighlight() {
+      var y1 = $highlight.data('y1');
+      var y2 = $highlight.data('y2');
+      var y = Math.min(y1, y2);
+      var h = Math.abs(y2 - y1);
+      $highlight.css('top', y + 'px');
+      $highlight.css('height', h + 'px');
+    }
+
+    function eventRelY(e, elem) {
+      var box = elem.getBoundingClientRect();
+      return e.pageY - box.top;
+    }
+
+    function addHandlers(page) {
+      page
+      .on('mousedown', function(e) {
+        $highlight.data('y1', eventRelY(e, this));
+        $highlight.data('y2', eventRelY(e, this));
+        redrawHighlight();
+        $(this).append($highlight);
+        return false;
+      })
+      .on('mousemove', function(e) {
+        $highlight.data('y2', eventRelY(e, this));
+        console.log(eventRelY(e, this));
+        redrawHighlight();
+      })
+      .on('mouseup', function(e) {
+        $highlight.data('y2', eventRelY(e, this));
+        redrawHighlight();
+        $highlight = $highlight.clone();
+        return false;
+      })
+      .on('mouseleave', function(e) {
+        $highlight.detach();
+      });
+    }
+
 
     //
     // Asynchronous download PDF as an ArrayBuffer
@@ -53,7 +102,17 @@
 
       var dr = $('#document-wrapper');
       Number.range(1, pdf.numPages).every().map(function(i) {
-        var c = $('<canvas>').appendTo(dr);
+
+        var c, p;
+        dr.append(
+          p = $('<div>').addClass('page').append(
+            c = $('<canvas>')
+          )
+        );
+
+        c.data('page-num', i);
+
+        addHandlers(p);
 
         var canvas = c[0];
         var context = canvas.getContext('2d');
@@ -76,13 +135,13 @@
           //
           // Prepare canvas using PDF page dimensions
           //
-          canvas.height = newVP.height;
-          canvas.width = newVP.width;
+          canvas.height = fullVP.height;
+          canvas.width = fullVP.width;
 
           //
           // Render PDF page into canvas context
           //
-          return page.render({canvasContext: context, viewport: newVP});
+          return page.render({canvasContext: context, viewport: fullVP});
         });
       });
     });
