@@ -193,7 +193,7 @@
       return null;
     }
 
-    function applyHighlight(pageElem, pixelSlice) {
+    function processSlice(pageElem, pixelSlice) {
       // convert to canvas coordinates
       var oldc = pageElem.find('canvas');
       var canvasSlice = new Slice(
@@ -224,6 +224,25 @@
         fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
       )
 
+      return new PDFJS.PageViewport(
+        /* viewBox  */ [
+          fullVP.viewBox[0],
+          pdfSlice.start - 2,
+          fullVP.viewBox[2],
+          pdfSlice.end + 2
+        ],
+        /* scale    */ 1,
+        /* rotation */ 0,
+        /* offset   */ 0, 0
+      )
+    }
+
+
+    function applyHighlight(pageElem, pixelSlice) {
+      var newVP = processSlice(pageElem, pixelSlice);
+
+      var page = pageElem.data('page');
+
       var c, p;
       questWrap.append(
         p = $('<div>').addClass('page').append(
@@ -233,18 +252,6 @@
 
       var canvas = c[0];
       var context = canvas.getContext('2d');
-
-      var newVP = new PDFJS.PageViewport(
-        /* viewBox  */ [
-          fullVP.viewBox[0],
-          pdfSlice.start - 10,
-          fullVP.viewBox[2],
-          pdfSlice.end + 10
-        ],
-        /* scale    */ 1,
-        /* rotation */ 0,
-        /* offset   */ 0, 0
-      )
 
       //
       // Prepare canvas using PDF page dimensions
