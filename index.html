@@ -182,7 +182,7 @@
     function pixelInteresting(imageData, x, y) {
       var pixels = imageData.data;
       var i = (y * imageData.width + x) * 4;
-      if(pixels[i] < 225 || pixels[i+1] < 225 || pixels[i+2] < 225) {
+      if(pixels[i] < 128 || pixels[i+1] < 128 || pixels[i+2] < 128) {
         return true;
       }
     }
