@@ -91,6 +91,39 @@
       }
     }
 
+    var PageSlice = function(slice, page) {
+      this.slice = slice;
+      this.page = page;
+    }
+
+    PageSlice.prototype.render = function(canvas) {
+      var fullVP = this.page.getViewport(1);
+
+      var newVP = new PDFJS.PageViewport(
+        /* viewBox  */ [
+          fullVP.viewBox[0],
+          this.slice.start - 2,
+          fullVP.viewBox[2],
+          this.slice.end + 2
+        ],
+        /* scale    */ 1,
+        /* rotation */ 0,
+        /* offset   */ 0, 0
+      )
+
+      var context = canvas.getContext('2d');
+      canvas.height = newVP.height;
+      canvas.width = newVP.width;
+
+      this.page.render({canvasContext: context, viewport: newVP});
+    }
+
+    PageSlice.prototype.startsBefore = function(other) {
+      if(this.page.pageNumber == other.page.pageNumber)
+        return this.slice.start > other.slice.start; // coordinates decrease down the page
+      else
+        return this.page.pageNumber < other.page.pageNumber;
+    }
     var Highlight = function(slice) {
       this.slice = slice;
       this.$elem = $('<div>').addClass('highlight');
@@ -172,9 +205,35 @@
       })
 
       page.on('mousedown', '.highlight', function() {
+
+      page.on('click', '.highlight:not(.chosen)', function() {
         var highlight = $(this).data('highlight');
-        applyHighlight(page, highlight.slice);
-        highlight.detach();
+
+        $(this).addClass('chosen');
+
+        var pageSlice = processSlice(highlight.target, highlight.slice);
+
+        // render to HTML/canvas
+        var c;
+        var snippetElem = $('<div>').addClass('page').addClass('question').append(
+          c = $('<canvas>')
+        );
+        pageSlice.render(c[0]);
+        snippetElem.data('slice', pageSlice);
+
+        // insert the slice in the right order
+        var inserted = false;
+        questWrap.children('.page').each(function() {
+          var d = $(this).data('slice');
+          if(!inserted && d && !d.startsBefore(pageSlice)) {
+            snippetElem.insertBefore(this)
+            inserted = true;
+          }
+        });
+        if(!inserted) {
+          questWrap.append(snippetElem);
+        }
+
         return false;
       });
     }
@@ -214,7 +273,7 @@
 
     function processSlice(pageElem, pixelSlice) {
       // convert to canvas coordinates
-      var oldc = pageElem.find('canvas');
+      var oldc = $(pageElem).find('canvas');
       var canvasSlice = new Slice(
         pixelSlice.a * oldc[0].height / oldc.height(),
         pixelSlice.b * oldc[0].height / oldc.height()
@@ -236,54 +295,16 @@
       )
 
       // convert to pdf coordinates
-      var page = pageElem.data('page');
+      var page = $(pageElem).data('page');
       var fullVP = page.getViewport(1);
-      var pdfSlice = new Slice(
-        fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
-        fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
-      )
-
-      return new PDFJS.PageViewport(
-        /* viewBox  */ [
-          fullVP.viewBox[0],
-          pdfSlice.start - 2,
-          fullVP.viewBox[2],
-          pdfSlice.end + 2
-        ],
-        /* scale    */ 1,
-        /* rotation */ 0,
-        /* offset   */ 0, 0
+      return new PageSlice(
+        new Slice(
+          fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
+          fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
+        ),
+        page
       )
     }
-
-
-    function applyHighlight(pageElem, pixelSlice) {
-      var newVP = processSlice(pageElem, pixelSlice);
-
-      var page = pageElem.data('page');
-
-      var c, p;
-      questWrap.append(
-        p = $('<div>').addClass('page').append(
-          c = $('<canvas>')
-        )
-      );
-
-      var canvas = c[0];
-      var context = canvas.getContext('2d');
-
-      //
-      // Prepare canvas using PDF page dimensions
-      //
-      canvas.height = newVP.height;
-      canvas.width = newVP.width;
-
-      //
-      // Render PDF page into canvas context
-      //
-      return page.render({canvasContext: context, viewport: newVP});
-    }
-
 
     //
     // Asynchronous download PDF as an ArrayBuffer
