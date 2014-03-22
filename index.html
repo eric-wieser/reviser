@@ -52,6 +52,22 @@
   </style>
 
   <script type="text/javascript">
+    var Slice = function(a, b) {
+      this.a = a;
+      this.b = b;
+    };
+    Slice.prototype = {
+      constructor: Slice,
+      get start() {
+        return this.a > this.b ? this.b : this.a;
+      },
+      get end() {
+        return this.a > this.b ? this.a : this.b;
+      },
+      get length() {
+        return Math.abs(this.a - this.b);
+      }
+    }
 
     //
     // NOTE:
@@ -74,12 +90,9 @@
 
     var $highlight = $('<div>').addClass('highlight');
     function redrawHighlight() {
-      var y1 = $highlight.data('y1');
-      var y2 = $highlight.data('y2');
-      var y = Math.min(y1, y2);
-      var h = Math.abs(y2 - y1);
-      $highlight.css('top', y + 'px');
-      $highlight.css('height', h + 'px');
+      var s = $highlight.data('slice');
+      $highlight.css('top', s.start + 'px');
+      $highlight.css('height', s.length + 'px');
     }
 
     function eventRelY(e, elem) {
@@ -90,18 +103,18 @@
     function addHandlers(page) {
       page
       .on('mousedown', function(e) {
-        $highlight.data('y1', eventRelY(e, this));
-        $highlight.data('y2', eventRelY(e, this));
+        var y = eventRelY(e, this);
+        $highlight.data('slice', new Slice(y, y));
         redrawHighlight();
         $(this).append($highlight);
         return false;
       })
       .on('mousemove', function(e) {
-        $highlight.data('y2', eventRelY(e, this));
+        $highlight.data('slice').b = eventRelY(e, this);
         redrawHighlight();
       })
       .on('mouseup', function(e) {
-        $highlight.data('y2', eventRelY(e, this));
+        $highlight.data('slice').b = eventRelY(e, this);
         redrawHighlight();
         $highlight = $highlight.clone();
         return false;
@@ -158,23 +171,17 @@
       var fullVP = page.getViewport(1);
 
       // get screen coordinates
-      var y1 = $(h).data('y1');
-      var y2 = $(h).data('y2');
+      var pixelSlice = $(h).data('slice');
 
       // convert to canvas coordinates
       var oldc = pageElem.find('canvas');
-      y1 *= oldc[0].height / oldc.height();
-      y2 *= oldc[0].height / oldc.height();
-
-      // sort
-      if(y1 > y2) {
-        var temp = y1;
-        y1 = y2;
-        y2 = temp;
-      }
+      var canvasSlice = new Slice(
+        pixelSlice.a * oldc[0].height / oldc.height(),
+        pixelSlice.b * oldc[0].height / oldc.height()
+      );
 
       // now trim surrounding whitespace
-      var imageData = oldc[0].getContext('2d').getImageData(0, y1, oldc[0].width, y2 - y1);
+      var imageData = oldc[0].getContext('2d').getImageData(0, canvasSlice.start, oldc[0].width, canvasSlice.length);
       var lir = lastInterestingRow(imageData);
       var fir = firstInterestingRow(imageData);
       if(lir == null || fir == null) {
@@ -182,21 +189,17 @@
         h.remove();
         return;
       }
-      y2 = y1 + lir;
-      y1 = y1 + fir;
+
+      var trimmedSlice = new Slice(
+        canvasSlice.start + lir,
+        canvasSlice.start + fir
+      )
 
       // convert to pdf coordinates
-      y1 = fullVP.convertToPdfPoint(0, y1)[1];
-      y2 = fullVP.convertToPdfPoint(0, y2)[1];
-
-      // sort
-      if(y1 > y2) {
-        var temp = y1;
-        y1 = y2;
-        y2 = temp;
-      }
-
-      console.log(y1, y2);
+      var pdfSlice = new Slice(
+        fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
+        fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
+      )
 
       var c, p;
       questWrap.append(
@@ -211,9 +214,9 @@
       var newVP = new PDFJS.PageViewport(
         /* viewBox  */ [
           fullVP.viewBox[0],
-          Math.min(y1, y2),
+          pdfSlice.start,
           fullVP.viewBox[2],
-          Math.max(y1, y2),
+          pdfSlice.end
         ],
         /* scale    */ 1,
         /* rotation */ 0,
@@ -256,18 +259,6 @@
         return pdf.getPage(i).then(function getPage(page) {
           p.data('page', page);
           var fullVP = page.getViewport(1);
-
-          var newVP = new PDFJS.PageViewport(
-            /* viewBox  */ [
-              fullVP.viewBox[0],
-              fullVP.viewBox[3] / 2,
-              fullVP.viewBox[2],
-              fullVP.viewBox[3]
-            ],
-            /* scale    */ 1,
-            /* rotation */ 0,
-            /* offset   */ 0, 0
-          )
 
           addHandlers(p);
 
