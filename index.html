@@ -69,6 +69,38 @@
       }
     }
 
+    var Highlight = function(slice) {
+      this.slice = slice;
+      this.$elem = $('<div>').addClass('highlight');
+      this.target = null;
+
+      this.$elem.data('highlight', this);
+    }
+    Highlight.prototype = {
+      redraw: function() {
+        this.$elem.css('top', this.slice.start + 'px');
+        this.$elem.css('height', this.slice.length + 'px');
+      },
+      attach: function(target) {
+        this.target = target;
+        this.$elem.appendTo(target);
+        this.redraw();
+      },
+      detach: function() {
+        this.target = null;
+        this.$elem.detach();
+      },
+      updateFromEvent: function(e) {
+        this.slice.b = eventRelY(e, this.target);
+        this.redraw();
+      }
+    }
+
+    function debug(x) {
+      console.log([].slice.call(arguments));
+      return [].pop.call(arguments);
+    }
+
     //
     // NOTE:
     // Modifying the URL below to another server will likely *NOT* work. Because of browser
@@ -88,44 +120,42 @@
     var docWrap = $('#document-wrapper');
     var questWrap = $('#question-wrapper');
 
-    var $highlight = $('<div>').addClass('highlight');
-    function redrawHighlight() {
-      var s = $highlight.data('slice');
-      $highlight.css('top', s.start + 'px');
-      $highlight.css('height', s.length + 'px');
-    }
+    var highlight = null;
 
     function eventRelY(e, elem) {
+      console.log(elem);
       var box = elem.getBoundingClientRect();
-      return e.pageY - box.top;
+      return debug("pY",e.pageY) - debug("bT", box.top);
     }
 
     function addHandlers(page) {
       page
       .on('mousedown', function(e) {
         var y = eventRelY(e, this);
-        $highlight.data('slice', new Slice(y, y));
-        redrawHighlight();
-        $(this).append($highlight);
+        highlight = new Highlight(new Slice(y, y));
+        highlight.attach(this);
         return false;
       })
       .on('mousemove', function(e) {
-        $highlight.data('slice').b = eventRelY(e, this);
-        redrawHighlight();
+        if(!highlight) return;
+        highlight.updateFromEvent(e);
       })
-      .on('mouseup', function(e) {
-        $highlight.data('slice').b = eventRelY(e, this);
-        redrawHighlight();
-        $highlight = $highlight.clone();
-        return false;
+
+
+      $('body').on('mouseup', function(e) {
+        if(!highlight) return;
+        highlight.updateFromEvent(e);
+        highlight = null;
       })
-      .on('mouseleave', function(e) {
-        $highlight.detach();
-      });
+      .on('mousemove', function(e) {
+        if(!highlight) return;
+        highlight.updateFromEvent(e);
+      })
 
       page.on('mousedown', '.highlight', function() {
-        applyHighlight(page, this);
-        $highlight.detach();
+        var highlight = $(this).data('highlight');
+        applyHighlight(page, highlight.slice);
+        highlight.detach();
         return false;
       });
     }
@@ -163,16 +193,7 @@
       return null;
     }
 
-    function applyHighlight(pageElem, h) {
-      var page = pageElem.data('page');
-      console.log(page);
-
-
-      var fullVP = page.getViewport(1);
-
-      // get screen coordinates
-      var pixelSlice = $(h).data('slice');
-
+    function applyHighlight(pageElem, pixelSlice) {
       // convert to canvas coordinates
       var oldc = pageElem.find('canvas');
       var canvasSlice = new Slice(
@@ -196,6 +217,8 @@
       )
 
       // convert to pdf coordinates
+      var page = pageElem.data('page');
+      var fullVP = page.getViewport(1);
       var pdfSlice = new Slice(
         fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
         fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
@@ -214,9 +237,9 @@
       var newVP = new PDFJS.PageViewport(
         /* viewBox  */ [
           fullVP.viewBox[0],
-          pdfSlice.start,
+          pdfSlice.start - 10,
           fullVP.viewBox[2],
-          pdfSlice.end
+          pdfSlice.end + 10
         ],
         /* scale    */ 1,
         /* rotation */ 0,
