@@ -114,7 +114,6 @@
     }
   </style>
 
-  <!-- Use latest PDF.js build from Github -->
   <script type="text/javascript" src="pdf.js"></script>
   <script type="text/javascript" src="sugar.min.js"></script>
   <script type="text/javascript" src="http://code.jquery.com/jquery-git2.js"></script>
@@ -149,7 +148,6 @@
     <button type="button" class="btn btn-md btn-success export-button" data-bind="click: $root.export"><span class="glyphicon glyphicon-download-alt"></span> Export data file</button>
   </div>
 
-
   <script type="text/javascript">
     //https://stackoverflow.com/a/19328891/102441
     var saveJSON = (function () {
@@ -166,14 +164,6 @@
         window.URL.revokeObjectURL(url);
       };
     }());
-
-    // Tell knockout how to render a pageSlice
-    ko.bindingHandlers.pageSliceRender = {
-      init: function(element, valueAccessor) {
-        var slice = ko.unwrap(valueAccessor());
-        slice.render(element);
-      }
-    };
 
     // initialize knockout.js
     var viewModel = {
@@ -233,14 +223,7 @@
         event.stopPropagation();
       },
       export: function() {
-        var root = viewModel.sections().map(function(x) {
-          return {
-            type: x.type,
-            slices: x.slices.map(function(s) {
-              return { from: s.slice.start, to: s.slice.end, page: s.page.pageNumber };
-            })
-          }
-        });
+        var root = viewModel.sections();
 
         saveJSON(root, url.replace('.pdf', '.json'));
       }

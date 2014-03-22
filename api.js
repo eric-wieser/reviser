@@ -68,11 +68,22 @@ PageSlice.prototype.startsBefore = function(other) {
   else
     return this.page.pageNumber < other.page.pageNumber;
 }
+PageSlice.prototype.toJSON = function() {
+  return { from: this.slice.start, to: this.slice.end, page: this.page.pageNumber };
+}
 
 PageSlice.sortFunc = function(a, b) {
   return a.startsBefore(b) ? -1 :
          b.startsBefore(a) ?  1 : 0
 }
+
+// Tell knockout how to render a pageSlice
+ko.bindingHandlers.pageSliceRender = {
+  init: function(element, valueAccessor) {
+    var slice = ko.unwrap(valueAccessor());
+    slice.render(element);
+  }
+};
 
 var Highlight = function(slice) {
   this.slice = slice;
