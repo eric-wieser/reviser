@@ -269,7 +269,7 @@
 
         $(this).addClass('chosen');
 
-        var pageSlice = processSlice(highlight.target, highlight.slice);
+        var pageSlice = processHighlight(highlight);
 
         viewModel.slices.push(pageSlice);
         viewModel.slices.sort(PageSlice.sortFunc);
@@ -311,12 +311,16 @@
       return null;
     }
 
-    function processSlice(pageElem, pixelSlice) {
+    function processHighlight(highlight) {
+      var $pageElem = $(highlight.target);
+      var pixelSlice = highlight.slice;
+
       // convert to canvas coordinates
-      var oldc = $(pageElem).find('canvas');
+      var oldc = $pageElem.find('canvas');
+      var convFactor = oldc[0].height / oldc.height();
       var canvasSlice = new Slice(
-        pixelSlice.a * oldc[0].height / oldc.height(),
-        pixelSlice.b * oldc[0].height / oldc.height()
+        pixelSlice.a * convFactor,
+        pixelSlice.b * convFactor
       );
 
       // now trim surrounding whitespace
@@ -334,8 +338,13 @@
         canvasSlice.start + fir
       )
 
+      // and update the UI to show the trimmed region
+      pixelSlice.a = trimmedSlice.a / convFactor;
+      pixelSlice.b = trimmedSlice.b / convFactor;
+      highlight.redraw();
+
       // convert to pdf coordinates
-      var page = $(pageElem).data('page');
+      var page = $pageElem.data('page');
       var fullVP = page.getViewport(1);
       return new PageSlice(
         new Slice(
