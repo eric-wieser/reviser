@@ -42,8 +42,9 @@
   }
   #document-wrapper .page .highlight {
     display: block;
-    background: rgba(255, 255, 0, 0.5);
-    border: 1px solid rgba(255, 255, 0, 0.5);
+    background: rgba(0, 128, 255, 0.5);
+    border-top: 1px solid rgb(0, 128, 255);
+    border-bottom: 1px solid rgb(0, 128, 255);
     position: absolute;
     left: 0;
     right: 0;
@@ -51,6 +52,7 @@
   </style>
 
   <script type="text/javascript">
+
     //
     // NOTE:
     // Modifying the URL below to another server will likely *NOT* work. Because of browser
@@ -115,19 +117,43 @@
       });
     }
 
+    function pixelInteresting(imageData, x, y) {
+      var pixels = imageData.data;
+      var i = (y * imageData.width + x) * 4;
+      if(pixels[i] < 225 || pixels[i+1] < 225 || pixels[i+2] < 225) {
+        return true;
+      }
+    }
+
+
+    // returns the first non-white row index of an image
+    function rowInteresting(imageData, y) {
+      for(var x = 0; x < imageData.width; x++)
+        if(pixelInteresting(imageData, x, y))
+          return true;
+      return false;
+    }
+
+    // returns the first non-white row index of an image
+    function firstInterestingRow(imageData) {
+      for(var y = 0; y < imageData.height; y++)
+        if(rowInteresting(imageData, y))
+          return y;
+      return null;
+    }
+
+    // returns the last non-white row index of an image
+    function lastInterestingRow(imageData) {
+      for(var y = imageData.height - 1; y >= 0; y--)
+        if(rowInteresting(imageData, y))
+          return y;
+      return null;
+    }
+
     function applyHighlight(pageElem, h) {
       var page = pageElem.data('page');
       console.log(page);
 
-      var c, p;
-      questWrap.append(
-        p = $('<div>').addClass('page').append(
-          c = $('<canvas>')
-        )
-      );
-
-      var canvas = c[0];
-      var context = canvas.getContext('2d');
 
       var fullVP = page.getViewport(1);
 
@@ -140,11 +166,47 @@
       y1 *= oldc[0].height / oldc.height();
       y2 *= oldc[0].height / oldc.height();
 
+      // sort
+      if(y1 > y2) {
+        var temp = y1;
+        y1 = y2;
+        y2 = temp;
+      }
+
+      // now trim surrounding whitespace
+      var imageData = oldc[0].getContext('2d').getImageData(0, y1, oldc[0].width, y2 - y1);
+      var lir = lastInterestingRow(imageData);
+      var fir = firstInterestingRow(imageData);
+      if(lir == null || fir == null) {
+        alert("Empty selection");
+        h.remove();
+        return;
+      }
+      y2 = y1 + lir;
+      y1 = y1 + fir;
+
       // convert to pdf coordinates
       y1 = fullVP.convertToPdfPoint(0, y1)[1];
       y2 = fullVP.convertToPdfPoint(0, y2)[1];
 
+      // sort
+      if(y1 > y2) {
+        var temp = y1;
+        y1 = y2;
+        y2 = temp;
+      }
+
       console.log(y1, y2);
+
+      var c, p;
+      questWrap.append(
+        p = $('<div>').addClass('page').append(
+          c = $('<canvas>')
+        )
+      );
+
+      var canvas = c[0];
+      var context = canvas.getContext('2d');
 
       var newVP = new PDFJS.PageViewport(
         /* viewBox  */ [
