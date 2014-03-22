@@ -1,0 +1,84 @@
+<script src="http://static.jsbin.com/js/vendor/traceur.js"></script><script src="http://code.jquery.com/jquery-git2.js"></script><html>
+<!--
+  Created using jsbin.com
+  Source can be edited via http://jsbin.com/pdfjs-helloworld-v2/8510/edit
+-->
+<body>
+  <canvas id="main-document" style="border:3px solid black"></canvas>
+  <canvas id="question" style="border:3px solid black"></canvas>
+
+  <!-- Use latest PDF.js build from Github -->
+  <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
+  
+  <script type="text/javascript">
+    //
+    // NOTE:
+    // Modifying the URL below to another server will likely *NOT* work. Because of browser
+    // security restrictions, we have to use a file server with special headers
+    // (CORS) - most servers don't support cross-origin browser requests.
+    //
+    var url = 'P1A2004Q004.pdf';
+
+    //
+    // Disable workers to avoid yet another cross-origin issue (workers need the URL of
+    // the script to be loaded, and dynamically loading a cross-origin script does
+    // not work)
+    //
+    PDFJS.disableWorker = true;
+
+    var canvas = document.getElementById('main-document');
+    var context = canvas.getContext('2d');
+
+    //
+    // Asynchronous download PDF as an ArrayBuffer
+    //
+    PDFJS.getDocument(url).then(function getPdfHelloWorld(pdf) {
+      //
+      // Fetch the first page
+      //
+      pdf.getPage(3).then(function getPageHelloWorld(page) {
+        var fullVP = page.getViewport(1);
+
+        var newVP = new PDFJS.PageViewport(
+          /* viewBox  */ [
+            fullVP.viewBox[0],
+            fullVP.viewBox[3] / 2,
+            fullVP.viewBox[2],
+            fullVP.viewBox[3]
+          ],
+          /* scale    */ 1,
+          /* rotation */ 0,
+          /* offset   */ 0, 0
+        )
+
+        //
+        // Prepare canvas using PDF page dimensions
+        //
+        canvas.height = newVP.height;
+        canvas.width = newVP.width;
+
+        //
+        // Render PDF page into canvas context
+        //
+        page.render({canvasContext: context, viewport: newVP});
+      });
+    });
+  </script>
+  
+
+<style id="jsbin-css">
+
+</style>
+<script>
+/*
+If you've just translated to JS, make sure traceur is in the HTML panel.
+This is terrible, sorry, but the only way we could get around race conditions.
+
+Hugs & kisses,
+Dave xox
+*/
+try{window.traceur = top.traceur;}catch(e){}
+// jsbin
+</script>
+</body>
+</html>
