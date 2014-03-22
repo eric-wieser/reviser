@@ -1,15 +1,32 @@
-<script src="http://static.jsbin.com/js/vendor/traceur.js"></script><script src="http://code.jquery.com/jquery-git2.js"></script><html>
-<!--
-  Created using jsbin.com
-  Source can be edited via http://jsbin.com/pdfjs-helloworld-v2/8510/edit
--->
+<html>
 <body>
-  <canvas id="main-document" style="border:3px solid black"></canvas>
-  <canvas id="question" style="border:3px solid black"></canvas>
+  <div id="document-wrapper"></div>
+  <canvas id="main-document"></canvas>
+  <canvas id="question"></canvas>
 
   <!-- Use latest PDF.js build from Github -->
   <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
-  
+  <script type="text/javascript" src="sugar.min.js"></script>
+  <script type="text/javascript" src="http://code.jquery.com/jquery-git2.js"></script>
+
+  <style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  #document-wrapper {
+    height: 100vh;
+    background: gray;
+    overflow: scroll;
+  }
+  #document-wrapper canvas {
+    margin: 10px;
+    box-shadow: 0 0 5px black;
+    border: 1px solid #808080;
+    display: block;
+  }
+  </style>
+
   <script type="text/javascript">
     //
     // NOTE:
@@ -32,53 +49,43 @@
     //
     // Asynchronous download PDF as an ArrayBuffer
     //
-    PDFJS.getDocument(url).then(function getPdfHelloWorld(pdf) {
-      //
-      // Fetch the first page
-      //
-      pdf.getPage(3).then(function getPageHelloWorld(page) {
-        var fullVP = page.getViewport(1);
+    PDFJS.getDocument(url).then(function getPdf(pdf) {
 
-        var newVP = new PDFJS.PageViewport(
-          /* viewBox  */ [
-            fullVP.viewBox[0],
-            fullVP.viewBox[3] / 2,
-            fullVP.viewBox[2],
-            fullVP.viewBox[3]
-          ],
-          /* scale    */ 1,
-          /* rotation */ 0,
-          /* offset   */ 0, 0
-        )
+      var dr = $('#document-wrapper');
+      Number.range(1, pdf.numPages).every().map(function(i) {
+        var c = $('<canvas>').appendTo(dr);
 
-        //
-        // Prepare canvas using PDF page dimensions
-        //
-        canvas.height = newVP.height;
-        canvas.width = newVP.width;
+        var canvas = c[0];
+        var context = canvas.getContext('2d');
 
-        //
-        // Render PDF page into canvas context
-        //
-        page.render({canvasContext: context, viewport: newVP});
+        return pdf.getPage(i).then(function getPage(page) {
+          var fullVP = page.getViewport(1);
+
+          var newVP = new PDFJS.PageViewport(
+            /* viewBox  */ [
+              fullVP.viewBox[0],
+              fullVP.viewBox[3] / 2,
+              fullVP.viewBox[2],
+              fullVP.viewBox[3]
+            ],
+            /* scale    */ 1,
+            /* rotation */ 0,
+            /* offset   */ 0, 0
+          )
+
+          //
+          // Prepare canvas using PDF page dimensions
+          //
+          canvas.height = newVP.height;
+          canvas.width = newVP.width;
+
+          //
+          // Render PDF page into canvas context
+          //
+          return page.render({canvasContext: context, viewport: newVP});
+        });
       });
     });
   </script>
-  
-
-<style id="jsbin-css">
-
-</style>
-<script>
-/*
-If you've just translated to JS, make sure traceur is in the HTML panel.
-This is terrible, sorry, but the only way we could get around race conditions.
-
-Hugs & kisses,
-Dave xox
-*/
-try{window.traceur = top.traceur;}catch(e){}
-// jsbin
-</script>
 </body>
 </html>
