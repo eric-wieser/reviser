@@ -1,5 +1,6 @@
 <html>
 <head>
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
       margin: 0;
@@ -60,12 +61,39 @@
       margin: 10px;
     }
 
-    #question-wrapper .page:not(.question) {
+    #question-wrapper .page.info {
       margin-right: 100px;
     }
     #question-wrapper .page.question {
       margin-left: 100px;
     }
+
+    .page .slice {
+      position: relative;
+    }
+
+    .page .slice .split-button {
+      visibility: hidden;
+      position: absolute;
+      top: -25px;
+    }
+
+    .page .merge-button {
+      position: absolute;
+      top: -25px;
+      z-index: 1;
+      visibility: hidden;
+    }
+    .page.question .merge-button,
+    .page.question .split-button { right: 10px; }
+    .page.info     .merge-button,
+    .page.info     .split-button { left: 10px; }
+
+    .page.question:hover + .page.question       .merge-button,
+    .page.question       + .page.question:hover .merge-button,
+    .page.info:hover     + .page.info           .merge-button,
+    .page.info           + .page.info:hover     .merge-button,
+    .page:hover .slice + .slice .split-button { visibility: visible; }
   </style>
 
   <!-- Use latest PDF.js build from Github -->
@@ -82,22 +110,32 @@
       <strong style="float: left">Info</strong>
       <strong style="float: right">Questions and figures</strong>
     </div>
-    <div data-bind="foreach: { data: slices }">
-      <div class="page" data-bind="css: $data.type, click: $parent.toggleSliceType">
-        <canvas data-bind="pageSliceRender: $data"></canvas>
+    <div data-bind="foreach: { data: sections, as: '_section' }">
+      <div class="page" data-bind="css: _section.type, click: $root.toggleSectionType">
+        <button type="button" class="btn btn-lg btn-default merge-button"
+                data-bind="click: $root.mergeSection">
+          <span class="glyphicon glyphicon-resize-small"></span>
+        </button>
+        <div data-bind="foreach: { data: slices, as: '_slice' }">
+          <div class="slice">
+            <button type="button" class="btn btn-lg btn-default split-button"
+                    data-bind="click: $root.splitSection">
+              <span class="glyphicon glyphicon-resize-full"></span>
+            </button>
+            <canvas data-bind="pageSliceRender: _slice"></canvas>
+          </div>
+        </div>
+        <div class="btn-toolbar" role="toolbar">
+          <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-default">Question</button>
+            <button type="button" class="btn btn-sm btn-default">Other</button>
+          </div>
+          <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-default"><span class="glyphicon glyphicon-remove"></span></button>
+          </div>
+        </div>
       </div>
     </div>
-    <!-- <div class="page">
-      <div class="btn-toolbar" role="toolbar">
-        <div class="btn-group">
-          <button type="button" class="btn btn-default">Question</button>
-          <button type="button" class="btn btn-default">Other</button>
-        </div>
-        <div class="btn-group">
-          <button type="button" class="btn btn-default">Add</button>
-        </div>
-      </div>
-    </div> -->
   </div>
 
 
@@ -112,12 +150,44 @@
 
     // initialize knockout.js
     var viewModel = {
-      slices: ko.observableArray([]),
-      toggleSliceType: function(slice) {
+      sections: ko.observableArray([]),
+      toggleSectionType: function(slice) {
         if(slice.type == 'question')
           slice.type = 'info';
         else
           slice.type = 'question';
+      },
+      splitSection: function(current, event) {
+        var context = ko.contextFor(event.target);
+
+        // get the current slice and all it's future siblings
+        var section = context._section;
+        var i = context.$index();
+        var laterSlices = section.slices.splice(i, Infinity);
+
+        // and move them into a new section
+        var newSection = new Section(section.type, laterSlices);
+
+        // after the current one
+        var j = viewModel.sections.indexOf(section);
+        viewModel.sections.splice(j+1, 0, newSection);
+
+        event.stopPropagation();
+      },
+      mergeSection: function(current, event) {
+        var context = ko.contextFor(event.target);
+
+        // get the previous section
+        var i = context.$index();
+        var prev = viewModel.sections()[i - 1];
+
+        // append all of the current slices to its slices
+        prev.slices = prev.slices.concat(current.slices)
+
+        // and delete the section
+        viewModel.sections.splice(i, 1);
+
+        event.stopPropagation();
       }
     };
     ko.applyBindings(viewModel);
@@ -141,10 +211,20 @@
       }
     }
 
+    var Section = function(type, slices) {
+      this.type = type || 'question';
+      this.slices = slices || [];
+
+      ko.track(this);
+    };
+
+    Section.sortFunc = function(a, b) {
+      return PageSlice.sortFunc(a.slices[0], b.slices[0]);
+    }
+
     var PageSlice = function(slice, page) {
       this.slice = slice;
       this.page = page;
-      this.type = 'question';
 
       ko.track(this);
     }
@@ -282,8 +362,10 @@
 
         var pageSlice = processHighlight(highlight);
 
-        viewModel.slices.push(pageSlice);
-        viewModel.slices.sort(PageSlice.sortFunc);
+        var section = new Section('question', [pageSlice]);
+
+        viewModel.sections.push(section);
+        viewModel.sections.sort(Section.sortFunc);
 
         return false;
       });
