@@ -81,12 +81,23 @@
     <div style="overflow: hidden; margin: 10px">
       <strong style="float: left">Info</strong>
       <strong style="float: right">Questions and figures</strong>
-      <div data-bind="foreach: { data: slices }">
-        <div class="page" data-bind="css: $data.type, click: $parent.toggleSliceType">
-          <canvas data-bind="pageSliceRender: $data"></canvas>
-        </div>
+    </div>
+    <div data-bind="foreach: { data: slices }">
+      <div class="page" data-bind="css: $data.type, click: $parent.toggleSliceType">
+        <canvas data-bind="pageSliceRender: $data"></canvas>
       </div>
     </div>
+    <!-- <div class="page">
+      <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group">
+          <button type="button" class="btn btn-default">Question</button>
+          <button type="button" class="btn btn-default">Other</button>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn btn-default">Add</button>
+        </div>
+      </div>
+    </div> -->
   </div>
 
 
@@ -144,9 +155,9 @@
       var newVP = new PDFJS.PageViewport(
         /* viewBox  */ [
           fullVP.viewBox[0],
-          this.slice.start - 2,
+          this.slice.start,
           fullVP.viewBox[2],
-          this.slice.end + 2
+          this.slice.end,
         ],
         /* scale    */ 1,
         /* rotation */ 0,
@@ -181,8 +192,8 @@
     }
     Highlight.prototype = {
       redraw: function() {
-        this.$elem.css('top', this.slice.start + 'px');
-        this.$elem.css('height', this.slice.length + 'px');
+        this.$elem.css('top', this.slice.start - 1 + 'px');
+        this.$elem.css('height', this.slice.length + 1 + 'px');
       },
       attach: function(target) {
         this.target = target;
@@ -346,10 +357,16 @@
       // convert to pdf coordinates
       var page = $pageElem.data('page');
       var fullVP = page.getViewport(1);
+      var pdfSlice = new Slice(
+        fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
+        fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
+      )
+
+      // and return a slightly larger window
       return new PageSlice(
         new Slice(
-          fullVP.convertToPdfPoint(0, trimmedSlice.a)[1],
-          fullVP.convertToPdfPoint(0, trimmedSlice.b)[1]
+          pdfSlice.start - 2,
+          pdfSlice.end + 2
         ),
         page
       )
