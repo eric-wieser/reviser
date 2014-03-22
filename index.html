@@ -38,6 +38,7 @@
   }
   .page canvas {
     display: block;
+    max-width: 100%;
   }
   #document-wrapper .page .highlight {
     display: block;
@@ -110,6 +111,7 @@
       page.on('mousedown', '.highlight', function() {
         applyHighlight(page, this);
         $highlight.detach();
+        return false;
       });
     }
 
@@ -129,12 +131,18 @@
 
       var fullVP = page.getViewport(1);
 
-      var y1 = $(h).data('y1')
-      var y2 = $(h).data('y2')
-      console.log(y1, y2);
+      // get screen coordinates
+      var y1 = $(h).data('y1');
+      var y2 = $(h).data('y2');
 
-      var y1 = fullVP.convertToPdfPoint(0, $(h).data('y1'))[1];
-      var y2 = fullVP.convertToPdfPoint(0, $(h).data('y2'))[1];
+      // convert to canvas coordinates
+      var oldc = pageElem.find('canvas');
+      y1 *= oldc[0].height / oldc.height();
+      y2 *= oldc[0].height / oldc.height();
+
+      // convert to pdf coordinates
+      y1 = fullVP.convertToPdfPoint(0, y1)[1];
+      y2 = fullVP.convertToPdfPoint(0, y2)[1];
 
       console.log(y1, y2);
 
