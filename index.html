@@ -146,10 +146,27 @@
         <button type="button" class="btn btn-md btn-danger delete-button" data-bind="click: $root.deleteSection"><span class="glyphicon glyphicon-remove"></span></button>
       </div>
     </div>
+    <button type="button" class="btn btn-md btn-success export-button" data-bind="click: $root.export"><span class="glyphicon glyphicon-download-alt"></span> Export data file</button>
   </div>
 
 
   <script type="text/javascript">
+    //https://stackoverflow.com/a/19328891/102441
+    var saveJSON = (function () {
+      var a = document.createElement("a");
+      document.body.appendChild(a);
+      a.style = "display: none";
+      return function(data, fileName) {
+        var json = JSON.stringify(data);
+        var blob = new Blob([json], {type: "application/json"});
+        var url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      };
+    }());
+
     // Tell knockout how to render a pageSlice
     ko.bindingHandlers.pageSliceRender = {
       init: function(element, valueAccessor) {
@@ -214,6 +231,18 @@
         });
 
         event.stopPropagation();
+      },
+      export: function() {
+        var root = viewModel.sections().map(function(x) {
+          return {
+            type: x.type,
+            slices: x.slices.map(function(s) {
+              return { from: s.slice.start, to: s.slice.end, page: s.page.pageNumber };
+            })
+          }
+        });
+
+        saveJSON(root, url.replace('.pdf', '.json'));
       }
     };
     ko.applyBindings(viewModel);
