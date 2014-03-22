@@ -1,6 +1,7 @@
 <html>
 <body>
   <div id="document-wrapper"></div>
+  <div id="question-wrapper"></div>
 
   <!-- Use latest PDF.js build from Github -->
   <script type="text/javascript" src="https://rawgithub.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
@@ -14,17 +15,28 @@
   }
   #document-wrapper {
     height: 100vh;
+    width: 50vw;
     background: gray;
-    overflow: scroll;
+    overflow-y: scroll;
+    position: absolute;
+    left: 0;
   }
-  #document-wrapper .page {
+  #question-wrapper {
+    height: 100vh;
+    width: 50vw;
+    background: #808080;
+    overflow-y: scroll;
+    position: absolute;
+    right: 0;
+  }
+  .page {
     margin: 10px;
     box-shadow: 0 0 5px black;
     border: 1px solid #808080;
     float: left;
     position: relative;
   }
-  #document-wrapper .page canvas {
+  .page canvas {
     display: block;
   }
   #document-wrapper .page .highlight {
@@ -54,6 +66,9 @@
     PDFJS.disableWorker = true;
 
 
+    var docWrap = $('#document-wrapper');
+    var questWrap = $('#question-wrapper');
+
     var $highlight = $('<div>').addClass('highlight');
     function redrawHighlight() {
       var y1 = $highlight.data('y1');
@@ -80,7 +95,6 @@
       })
       .on('mousemove', function(e) {
         $highlight.data('y2', eventRelY(e, this));
-        console.log(eventRelY(e, this));
         redrawHighlight();
       })
       .on('mouseup', function(e) {
@@ -92,6 +106,60 @@
       .on('mouseleave', function(e) {
         $highlight.detach();
       });
+
+      page.on('mousedown', '.highlight', function() {
+        applyHighlight(page, this);
+        $highlight.detach();
+      });
+    }
+
+    function applyHighlight(pageElem, h) {
+      var page = pageElem.data('page');
+      console.log(page);
+
+      var c, p;
+      questWrap.append(
+        p = $('<div>').addClass('page').append(
+          c = $('<canvas>')
+        )
+      );
+
+      var canvas = c[0];
+      var context = canvas.getContext('2d');
+
+      var fullVP = page.getViewport(1);
+
+      var y1 = $(h).data('y1')
+      var y2 = $(h).data('y2')
+      console.log(y1, y2);
+
+      var y1 = fullVP.convertToPdfPoint(0, $(h).data('y1'))[1];
+      var y2 = fullVP.convertToPdfPoint(0, $(h).data('y2'))[1];
+
+      console.log(y1, y2);
+
+      var newVP = new PDFJS.PageViewport(
+        /* viewBox  */ [
+          fullVP.viewBox[0],
+          Math.min(y1, y2),
+          fullVP.viewBox[2],
+          Math.max(y1, y2),
+        ],
+        /* scale    */ 1,
+        /* rotation */ 0,
+        /* offset   */ 0, 0
+      )
+
+      //
+      // Prepare canvas using PDF page dimensions
+      //
+      canvas.height = newVP.height;
+      canvas.width = newVP.width;
+
+      //
+      // Render PDF page into canvas context
+      //
+      return page.render({canvasContext: context, viewport: newVP});
     }
 
 
@@ -110,14 +178,13 @@
           )
         );
 
-        c.data('page-num', i);
 
-        addHandlers(p);
 
         var canvas = c[0];
         var context = canvas.getContext('2d');
 
         return pdf.getPage(i).then(function getPage(page) {
+          p.data('page', page);
           var fullVP = page.getViewport(1);
 
           var newVP = new PDFJS.PageViewport(
@@ -131,6 +198,8 @@
             /* rotation */ 0,
             /* offset   */ 0, 0
           )
+
+          addHandlers(p);
 
           //
           // Prepare canvas using PDF page dimensions
