@@ -114,6 +114,7 @@
     }
   </style>
 
+  <script>PDFJS = {workerSrc: 'pdf.worker.js'}</script>
   <script type="text/javascript" src="pdf.js"></script>
   <script type="text/javascript" src="sugar.min.js"></script>
   <script type="text/javascript" src="http://code.jquery.com/jquery-git2.js"></script>
@@ -239,7 +240,7 @@
     // security restrictions, we have to use a file server with special headers
     // (CORS) - most servers don't support cross-origin browser requests.
     //
-    var url = 'P1A2009P001.pdf';
+    var url = 'P1A2009Q001.pdf';
 
     //
     // Disable workers to avoid yet another cross-origin issue (workers need the URL of
