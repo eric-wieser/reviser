@@ -1,27 +1,143 @@
+<!doctype html>
 <html>
 <head>
   <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
   <title>Viewer</title>
   <script type="text/javascript" src="pdf.js"></script>
-  <script type="text/javascript" src="sugar.min.js"></script>
-  <script type="text/javascript" src="http://code.jquery.com/jquery-git2.js"></script>
+  <!-- <script type="text/javascript" src="sugar.min.js"></script> -->
+  <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
   <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.0.0.js"></script>
   <script type="text/javascript" src="knockout-es5.min.js"></script>
 
   <script type="text/javascript" src="api.js"></script>
+
+  <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.js"></script>
 
   <style>
     canvas {
       display: block;
       width: 100%;
     }
+
+    /* stolen from the bootstrap docs */
+    .the-sidebar.affix {
+        position: static
+    }
+
+    .the-sidenav {
+      margin-top: 20px;
+      margin-bottom: 20px
+    }
+
+    .the-sidebar .nav>li>a {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #999;
+      padding: 4px 20px;
+    }
+
+    .the-sidebar .nav>li>a:hover,.the-sidebar .nav>li>a:focus {
+      padding-left: 19px;
+      color: #563d7c;
+      text-decoration: none;
+      background-color: transparent;
+      border-left: 1px solid #563d7c
+    }
+
+    .the-sidebar .nav>.active>a,.the-sidebar .nav>.active:hover>a,.the-sidebar .nav>.active:focus>a {
+      padding-left: 18px;
+      font-weight: 700;
+      color: #563d7c;
+      background-color: transparent;
+      border-left: 2px solid #563d7c
+    }
+
+    .the-sidebar .nav .nav {
+      display: none;
+      padding-bottom: 10px
+    }
+
+    .the-sidebar .nav .nav>li>a {
+      padding-top: 1px;
+      padding-bottom: 1px;
+      padding-left: 30px;
+      font-size: 12px;
+      font-weight: 400
+    }
+
+    .the-sidebar .nav .nav>li>a:hover,.the-sidebar .nav .nav>li>a:focus {
+      padding-left: 29px
+    }
+
+    .the-sidebar .nav .nav>.active>a,.the-sidebar .nav .nav>.active:hover>a,.the-sidebar .nav .nav>.active:focus>a {
+      font-weight: 500;
+      padding-left: 28px
+    }
+
+    .the-sidebar .nav .nav .nav>li>a {
+      padding-left: 40px;
+    }
+    .the-sidebar .nav .nav .nav>li>a:hover,.the-sidebar .nav .nav .nav>li>a:focus {
+      padding-left: 39px
+    }
+
+    .the-sidebar .nav .nav .nav>.active>a,.the-sidebar .nav .nav .nav>.active:hover>a,.the-sidebar .nav .nav .nav>.active:focus>a {
+      padding-left: 38px
+    }
+
+    @media (min-width:992px) {
+      .the-sidebar .nav>.active>ul {
+        display: block
+      }
+
+      .the-sidebar.affix,.the-sidebar.affix-bottom {
+        width: 213px
+      }
+
+      .the-sidebar.affix {
+        position: fixed;
+        top: 20px;
+        bottom: 20px;
+      }
+      .the-sidebar.affix .part-images .part-image.active {
+        display: block;
+      }
+      .the-sidebar.affix .part-lists .active .part-list {
+        display: block;
+      }
+
+      .the-sidebar.affix-bottom {
+        position: absolute
+      }
+
+      .the-sidebar.affix-bottom .the-sidenav,.the-sidebar.affix .the-sidenav {
+        margin-top: 0;
+        margin-bottom: 0
+      }
+    }
+
+    @media (min-width:1200px) {
+      .the-sidebar.affix-bottom,.the-sidebar.affix {
+        width: 263px
+      }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Some paper</h1>
     <div class="row">
-      <div data-bind="foreach: { data: sections, as: '_section' }" class="col-md-9">
+      <div class="col-md-3">
+        <div class="the-sidebar">
+          <h1>Some paper</h1>
+          <ul class="nav" data-bind="foreach: { data: questions, as: 'q' }" >
+            <li>
+              <a data-bind="text: 'Question ' + $root.qNumber(q), attr: { href: '#q' + $root.qNumber(q) }"></a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div data-bind="foreach: { data: sections, as: '_section' }" class="col-md-9" style="margin-top: 40px">
         <div class="panel" data-bind="css: { 'panel-default': type == 'question', 'panel-info': type == 'info' }">
           <div class="section panel-body"
                data-bind="foreach: { data: slices, as: '_slice' },
@@ -32,13 +148,6 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="col-md-3">
-        <ul class="nav" data-bind="foreach: { data: questions, as: 'q' }" >
-          <li>
-            <a data-bind="text: 'Question ' + $root.qNumber(q), attr: { href: '#q' + $root.qNumber(q) }"></a>
-          </li>
-        </ul>
       </div>
     </div>
   </div>
@@ -56,7 +165,41 @@
         }
       };
       ko.applyBindings(viewModel);
+      setTimeout(function() {
+        $(window).scrollspy({target: ".the-sidebar", offset: 150 }).on('focused.bs.scrollspy', function(e) {
+          if ('replaceState' in history) {
+            history.replaceState('', '', e.href);
+          }
+        });
+      }, 2000);
     })
   </script>
+  <script>
+    ScrollSpy = $.fn.scrollspy.Constructor;
+
+    var old = ScrollSpy.prototype.activate;
+    ScrollSpy.prototype.activate = function(direct_target) {
+      this.$element.trigger({ type: 'focused.bs.scrollspy', href: direct_target });
+      return old.call(this, direct_target);
+    }
+
+    $(function() {
+      $(".the-sidebar").affix({
+        offset: {
+          top: function() {
+            return $(".the-sidebar").parent().offset().top - 20;
+          },
+          bottom: 10
+        }
+      });
+      var onResize;
+      $(window).on('resize', onResize = function() {
+        $(".the-sidebar").css('width', $(".the-sidebar").parent().width() + 'px')
+      });
+      $(window).on('load', function() {
+        onResize();
+      });
+    })
+    </script>
 </body>
 </html>
