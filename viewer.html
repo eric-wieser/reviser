@@ -44,7 +44,9 @@
   </div>
   </div>
   <script>
-    Promise.resolve($.get('P1A2004Q004.json')).then(JSON.parse).then(loadFromJSON).then(function(sections) {
+    if(!location.search) location.search = 'P1A2009P001.json';
+    var file = location.search.substr(1);
+    Promise.resolve($.get(file)).then(JSON.parse).then(loadFromJSON).then(function(sections) {
       var questions = sections.filter(function(s) { return s.type == 'question'; });
       var viewModel = {
         sections: sections,
