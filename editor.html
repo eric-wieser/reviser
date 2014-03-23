@@ -14,6 +14,7 @@
       position: absolute;
       left: 0;
       direction: rtl;
+      transition: all 0.25s;
     }
     #document-wrapper * {
       direction: ltr;
@@ -25,6 +26,7 @@
       overflow-y: scroll;
       position: absolute;
       right: 0;
+      transition: all 0.25s;
     }
     .page {
       margin: 10px;
@@ -318,6 +320,9 @@
 
         viewModel.sections.push(section);
         viewModel.sections.sort(Section.sortFunc);
+
+        questWrap.animate({scrollTop :questWrap[0].scrollHeight});
+        docWrap.animate({scrollTop : docWrap[0].scrollTop + this.getBoundingClientRect().bottom - 20});
 
         return false;
       });
