@@ -130,7 +130,7 @@
     <div class="row">
       <div class="col-md-3">
         <div class="the-sidebar">
-          <h1 data-bind="text: file.slice(1, -5)"></h1>
+          <h1 data-bind="text: paper"></h1>
           <ul class="nav" data-bind="foreach: { data: questions, as: 'q' }" >
             <li>
               <a data-bind="text: 'Question ' + $root.qNumber(q), attr: { href: '#q' + $root.qNumber(q) }"></a>
@@ -149,7 +149,7 @@
               </div>
             <!-- /ko -->
             <!-- ko if: $root.isQuestions && type == 'question' -->
-              <a data-bind="attr: {href: $root.file.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" style="float: right">
+              <a data-bind="attr: {href: '?' + $root.paper.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" style="float: right">
                 <span class="glyphicon glyphicon-pencil"></span> Crib
               </a>
             <!-- /ko -->
@@ -167,9 +167,10 @@
     //
     PDFJS.disableWorker = true;
 
-    if(!location.search) location.search = 'P1A2009Q001.json';
-    var file = location.search.substr(1);
-    Promise.resolve($.getJSON(file)).then(loadFromJSON).then(function(sections) {
+    if(!location.search) location.search = 'P1A2009Q001';
+    var paper = location.search.substr(1);
+
+    Promise.resolve($.getJSON('data/' + paper + '.json')).then(loadFromJSON).then(function(sections) {
       var questions = sections.filter(function(s) { return s.type == 'question'; });
       var viewModel = {
         sections: sections,
@@ -178,7 +179,7 @@
           return questions.indexOf(section) + 1;
         },
         isQuestions: location.search.search('Q') != -1,
-        file: location.search
+        paper: paper
       };
       ko.applyBindings(viewModel);
       if(location.hash) {

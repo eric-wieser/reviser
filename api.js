@@ -133,7 +133,7 @@ PageSlice.loadFrom = function(json, pdf) {
 }
 
 var loadFromJSON = function(json) {
-  return PDFJS.getDocument(json.file).then(function(pdf) {
+  return PDFJS.getDocument('pdfs/' + json.paper + '.pdf').then(function(pdf) {
     return Promise.all(
       json.sections.map(function(sectionJson) {
         return Section.loadFrom(sectionJson, pdf)

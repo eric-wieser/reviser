@@ -152,6 +152,9 @@
   </div>
 
   <script type="text/javascript">
+    if(!location.search) location.search = 'P1A2009Q001';
+    var paper = location.search.substr(1);
+
     //https://stackoverflow.com/a/19328891/102441
     var saveJSON = (function () {
       var a = document.createElement("a");
@@ -228,7 +231,13 @@
       export: function() {
         var root = viewModel.sections();
 
-        saveJSON({file: url, sections: root}, url.replace('.pdf', '.json'));
+        var save = JSON.stringify({paper: paper, sections: root});
+
+        Promise.resolve($.post('save/'+paper + (existsAlready ? '?replace=1' : ''), save)).then(function() {
+          location.href = 'next'
+        }).catch(console.error.bind(error))
+
+        //saveJSON({file: url, sections: root}, url.replace('.pdf', '.json'));
       }
     };
     ko.applyBindings(viewModel);
@@ -242,14 +251,23 @@
     // security restrictions, we have to use a file server with special headers
     // (CORS) - most servers don't support cross-origin browser requests.
     //
-    var url = 'P1A2009Q001.pdf';
+    var url = 'pdfs/' + paper + '.pdf';
+    var existsAlready = false;
+
+    Promise.resolve($.getJSON('data/' + paper + '.json'))
+      .catch(console.log.bind(console))
+      .then(loadFromJSON).then(function(sections) {
+        viewModel.sections(sections);
+        existsAlready = true;
+      });
+
 
     //
     // Disable workers to avoid yet another cross-origin issue (workers need the URL of
     // the script to be loaded, and dynamically loading a cross-origin script does
     // not work)
     //
-    PDFJS.disableWorker = true;
+    //  PDFJS.disableWorker = true;
 
 
     var docWrap = $('#document-wrapper');
