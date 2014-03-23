@@ -299,9 +299,8 @@
         return false;
       });
 
-      page.on('click', '.highlight:not(.chosen)', function() {
+      page.on('click contextmenu', '.highlight:not(.chosen)', function(e) {
         var highlight = $(this).data('highlight');
-
 
         try {
           var pageSlice = processHighlight(highlight);
@@ -315,7 +314,7 @@
         $(this).addClass('chosen');
         pageSlice.highlight = highlight;
 
-        var section = new Section('question', [pageSlice]);
+        var section = new Section(e.type == 'contextmenu' ? 'info' : 'question', [pageSlice]);
 
         viewModel.sections.push(section);
         viewModel.sections.sort(Section.sortFunc);
