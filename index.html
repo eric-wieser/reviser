@@ -3,6 +3,7 @@
 <head>
   <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
   <title>Viewer</title>
+  <script>PDFJS = {workerSrc: 'pdf.worker.js'}</script>
   <script type="text/javascript" src="pdf.js"></script>
   <!-- <script type="text/javascript" src="sugar.min.js"></script> -->
   <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.0.min.js"></script>
@@ -153,9 +154,16 @@
   </div>
   </div>
   <script>
+    //
+    // Disable workers to avoid yet another cross-origin issue (workers need the URL of
+    // the script to be loaded, and dynamically loading a cross-origin script does
+    // not work)
+    //
+    PDFJS.disableWorker = true;
+
     if(!location.search) location.search = 'P1A2009Q001.json';
     var file = location.search.substr(1);
-    Promise.resolve($.get(file)).then(JSON.parse).then(loadFromJSON).then(function(sections) {
+    Promise.resolve($.getJSON(file)).then(loadFromJSON).then(function(sections) {
       var questions = sections.filter(function(s) { return s.type == 'question'; });
       var viewModel = {
         sections: sections,
