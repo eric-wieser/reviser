@@ -43,7 +43,7 @@ PageSlice.prototype.render = function(canvas) {
       fullVP.viewBox[2],
       this.slice.end,
     ],
-    /* scale    */ 1,
+    /* scale    */ 2,
     /* rotation */ 0,
     /* offset   */ 0, 0
   )
