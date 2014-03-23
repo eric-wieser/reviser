@@ -141,13 +141,14 @@
       <div data-bind="foreach: { data: sections, as: '_section' }" class="col-md-9" style="margin-top: 40px">
         <div class="panel" data-bind="css: { 'panel-default': type == 'question', 'panel-info': type == 'info' }">
           <div class="section panel-body"
-               data-bind="foreach: { data: slices, as: '_slice' },
-                          css: _section.type,
+               data-bind="css: _section.type,
                           attr: { id: type == 'question' ? 'q' + $root.qNumber(_section) : null }" >
-            <div class="slice">
-              <canvas data-bind="pageSliceRender: _slice"></canvas>
-            </div>
-            <!-- ko if: $root.isQuestions && $parent.type == 'question' -->
+            <!-- ko foreach: { data: slices, as: '_slice' } -->
+              <div class="slice">
+                <canvas data-bind="pageSliceRender: _slice"></canvas>
+              </div>
+            <!-- /ko -->
+            <!-- ko if: $root.isQuestions && type == 'question' -->
               <a data-bind="attr: {href: $root.file.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" style="float: right">
                 <span class="glyphicon glyphicon-pencil"></span> Crib
               </a>
