@@ -147,6 +147,11 @@
             <div class="slice">
               <canvas data-bind="pageSliceRender: _slice"></canvas>
             </div>
+            <!-- ko if: $root.isQuestions && $parent.type == 'question' -->
+              <a data-bind="attr: {href: $root.file.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" style="float: right">
+                <span class="glyphicon glyphicon-pencil"></span> Crib
+              </a>
+            <!-- /ko -->
           </div>
         </div>
       </div>
@@ -170,9 +175,15 @@
         questions: questions,
         qNumber: function(section) {
           return questions.indexOf(section) + 1;
-        }
+        },
+        isQuestions: location.search.search('Q') != -1,
+        file: location.search
       };
       ko.applyBindings(viewModel);
+      if(location.hash) {
+        var st = $(location.hash).offset().top;
+        $('html, body').animate({ scrollTop: st }, 200);
+      }
       setTimeout(function() {
         $(window).scrollspy({target: ".the-sidebar", offset: 150 }).on('focused.bs.scrollspy', function(e) {
           if ('replaceState' in history) {
@@ -180,7 +191,7 @@
           }
         });
       }, 2000);
-    })
+    }).catch(console.error.bind(console));
   </script>
   <script>
     ScrollSpy = $.fn.scrollspy.Constructor;
