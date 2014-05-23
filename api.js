@@ -52,6 +52,8 @@ PageSlice.prototype.render = function(canvas) {
   canvas.height = newVP.height;
   canvas.width = newVP.width;
 
+  this.page.getTextContent().then(console.info.bind(console));
+
   if(this._lastCanvas && this._lastCanvas.width == canvas.width && this._lastCanvas.height == canvas.height) {
     context.drawImage(this._lastCanvas, 0, 0);
   }
