@@ -230,14 +230,17 @@
     Promise
       .resolve($.getJSON('data/' + paper + '.json'))
       .catch(function(e) {
-        viewModel.error = {msg: "Could not find JSON description file", inner: e};
+        viewModel.error({msg: "Could not find JSON description file", inner: e});
         throw e;
       })
 
-      .then(loadFromJSON)
-      .catch(function(e) {
-        viewModel.error = {msg: "Could not process JSON", inner: e};
-        throw e;
+      .then(function(json) {
+        return Promise
+          .resolve(loadFromJSON(json))
+          .catch(function(e) {
+            viewModel.error({msg: "Could not process JSON", inner: e});
+            throw e;
+          });
       })
 
       .then(function(sections) {
@@ -249,7 +252,7 @@
         viewModel.sections(sections);
         viewModel.questions(questions);
       })
-      .catch(console.error.bind(console))
+
       .finally(function() {
         if(location.hash) {
           var st = $(location.hash).offset().top;
