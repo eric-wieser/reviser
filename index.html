@@ -6,7 +6,7 @@
   <script>PDFJS = {workerSrc: 'pdf.worker.js'}</script>
   <script type="text/javascript" src="pdf.js"></script>
   <!-- <script type="text/javascript" src="sugar.min.js"></script> -->
-  <script type="text/javascript" src="//code.jquery.com/jquery-2.1.0.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.js"></script>
   <script type="text/javascript" src="//ajax.aspnetcdn.com/ajax/knockout/knockout-3.0.0.js"></script>
   <script type="text/javascript" src="knockout-es5.min.js"></script>
 
@@ -130,7 +130,16 @@
     <div class="row">
       <div class="col-md-3">
         <div class="the-sidebar">
-          <h1 data-bind="text: paper"></h1>
+          <small>
+            <!-- ko text: paperInfo.course --><!--/ko-->
+            <!-- ko text: paperInfo.year --><!--/ko-->
+          </small>
+          <h1>
+            <!-- ko text: paperInfo.moduleName --><!--/ko-->
+            <small>
+              <!-- ko text: paperInfo.moduleNumber --><!--/ko-->
+            </small>
+          </h1>
           <ul class="nav" data-bind="foreach: { data: questions, as: 'q' }" >
             <li>
               <a data-bind="text: 'Question ' + $root.qNumber(q), attr: { href: '#q' + $root.qNumber(q) }"></a>
@@ -138,28 +147,51 @@
           </ul>
         </div>
       </div>
-      <div data-bind="foreach: { data: sections, as: '_section' }" class="col-md-9" style="margin-top: 40px">
-        <div class="panel" data-bind="css: { 'panel-default': type == 'question', 'panel-info': type == 'info' }">
-          <div class="section panel-body"
-               data-bind="css: _section.type,
-                          attr: { id: type == 'question' ? 'q' + $root.qNumber(_section) : null }" >
-            <!-- ko foreach: { data: slices, as: '_slice' } -->
-              <div class="slice">
-                <canvas data-bind="pageSliceRender: _slice"></canvas>
-              </div>
-            <!-- /ko -->
-            <!-- ko if: $root.isQuestions && type == 'question' -->
-              <a data-bind="attr: {href: '?' + $root.paper.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" style="float: right">
-                <span class="glyphicon glyphicon-pencil"></span> Crib
-              </a>
-            <!-- /ko -->
+      <div class="col-md-9" style="margin-top: 40px">
+        <!-- ko if: $root.error -->
+          <div class="alert alert-danger" data-bind="text: $root.error.msg"></div>
+        <!-- /ko -->
+
+        <!-- ko foreach: { data: sections, as: '_section' } -->
+          <div class="panel" data-bind="css: { 'panel-default': type == 'question', 'panel-info': type == 'info' }">
+            <div class="section panel-body"
+                 data-bind="css: _section.type,
+                            attr: { id: type == 'question' ? 'q' + $root.qNumber(_section) : null }" >
+              <!-- ko foreach: { data: slices, as: '_slice' } -->
+                <div class="slice">
+                  <canvas data-bind="pageSliceRender: _slice"></canvas>
+                </div>
+              <!-- /ko -->
+              <!-- ko if: $root.isQuestions && type == 'question' -->
+                <a data-bind="attr: {href: '?' + $root.paper.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" target="_blank" style="float: right">
+                  <span class="glyphicon glyphicon-pencil"></span> Crib
+                </a>
+              <!-- /ko -->
+            </div>
           </div>
-        </div>
+        <!-- /ko -->
       </div>
     </div>
   </div>
   </div>
   <script>
+    Promise.prototype.finally = function (callback) {
+      var p = this.constructor;
+      // We don’t invoke the callback in here,
+      // because we want then() to handle its exceptions
+      return this.then(
+        // Callback fulfills: pass on predecessor settlement
+        // Callback rejects: pass on rejection (=omit 2nd arg.)
+        function(value) {
+          return Promise.resolve(callback()).then(function() { return value; });
+        },
+        function(reason) {
+          return Promise.resolve(callback()).then(function() { throw reason; });
+        }
+      );
+    };
+
+
     //
     // Disable workers to avoid yet another cross-origin issue (workers need the URL of
     // the script to be loaded, and dynamically loading a cross-origin script does
@@ -170,30 +202,67 @@
     if(!location.search) location.search = 'P1A2009Q001';
     var paper = location.search.substr(1);
 
-    Promise.resolve($.getJSON('data/' + paper + '.json')).then(loadFromJSON).then(function(sections) {
-      var questions = sections.filter(function(s) { return s.type == 'question'; });
-      var viewModel = {
-        sections: sections,
-        questions: questions,
-        qNumber: function(section) {
+    var parts = /P([1234I]+[AB])(\d{4})([QP])0*(\d+)/.exec(paper);
+    console.log(parts);
+
+    var moduleNames = {
+      1: 'Mechanical Engineering',
+      2: 'Structures and Materials',
+      3: 'Electrical and Information Engineering',
+      4: 'Mathematical Methods'
+    }
+
+    var viewModel = {
+      isQuestions: location.search.search('Q') != -1,
+      paper: paper,
+      paperInfo: {
+        course: "Part "+parts[1],
+        year: parts[2],
+        moduleNumber: "Paper " + +parts[4],
+        moduleName: moduleNames[+parts[4]]
+      },
+      sections: ko.observable([]),
+      questions: ko.observable([]),
+      error: ko.observable(null)
+    };
+    ko.applyBindings(viewModel);
+
+    Promise
+      .resolve($.getJSON('data/' + paper + '.json'))
+      .catch(function(e) {
+        viewModel.error = {msg: "Could not find JSON description file", inner: e};
+        throw e;
+      })
+
+      .then(loadFromJSON)
+      .catch(function(e) {
+        viewModel.error = {msg: "Could not process JSON", inner: e};
+        throw e;
+      })
+
+      .then(function(sections) {
+        var questions = sections.filter(function(s) { return s.type == 'question'; });
+
+        viewModel.qNumber = function(section) {
           return questions.indexOf(section) + 1;
-        },
-        isQuestions: location.search.search('Q') != -1,
-        paper: paper
-      };
-      ko.applyBindings(viewModel);
-      if(location.hash) {
-        var st = $(location.hash).offset().top;
-        $('html, body').animate({ scrollTop: st }, 200);
-      }
-      setTimeout(function() {
-        $(window).scrollspy({target: ".the-sidebar", offset: 150 }).on('focused.bs.scrollspy', function(e) {
-          if ('replaceState' in history) {
-            history.replaceState('', '', e.href);
-          }
-        });
-      }, 2000);
-    }).catch(console.error.bind(console));
+        };
+        viewModel.sections(sections);
+        viewModel.questions(questions);
+      })
+      .catch(console.error.bind(console))
+      .finally(function() {
+        if(location.hash) {
+          var st = $(location.hash).offset().top;
+          $('html, body').animate({ scrollTop: st }, 200);
+        }
+        setTimeout(function() {
+          $(window).scrollspy({target: ".the-sidebar", offset: 150 }).on('focused.bs.scrollspy', function(e) {
+            if ('replaceState' in history) {
+              history.replaceState('', '', e.href);
+            }
+          });
+        }, 2000);
+      })
   </script>
   <script>
     ScrollSpy = $.fn.scrollspy.Constructor;
