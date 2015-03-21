@@ -148,8 +148,8 @@
         </div>
       </div>
       <div class="col-md-9" style="margin-top: 40px">
-        <!-- ko if: $root.error -->
-          <div class="alert alert-danger" data-bind="text: $root.error.msg"></div>
+        <!-- ko if: error -->
+          <div class="alert alert-danger" data-bind="text: 'Error: ' + error().msg"></div>
         <!-- /ko -->
 
         <!-- ko foreach: { data: sections, as: '_section' } -->
