@@ -166,8 +166,13 @@
                 </div>
               <!-- /ko -->
               <!-- ko if: $root.isQuestions && type == 'question' -->
-                <a data-bind="attr: {href: '?' + $root.paper.replace('Q', 'P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" target="_blank" style="float: right">
+                <a data-bind="attr: {href: '?' + $root.paper.replace(/(.+)Q/, '$1P') + '#q' + $root.qNumber(_section) }" class="btn btn-default" target="_blank" style="float: right">
                   <span class="glyphicon glyphicon-pencil"></span> Crib
+                </a>
+              <!-- /ko -->
+              <!-- ko if: !$root.isQuestions && type == 'question' -->
+                <a data-bind="attr: {href: '?' + $root.paper.replace(/(.+)P/, '$1Q') + '#q' + $root.qNumber(_section) }" class="btn btn-default" target="_blank" style="float: right">
+                  <span class="glyphicon glyphicon-question-sign"></span> Question
                 </a>
               <!-- /ko -->
             </div>
