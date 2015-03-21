@@ -133,13 +133,13 @@
     <div data-bind="foreach: { data: sections, as: '_section' }">
       <div class="page" data-bind="css: _section.type, click: $root.toggleSectionType">
         <button type="button" class="btn btn-lg btn-default merge-button"
-                data-bind="click: $root.mergeSection">
+                data-bind="click: $root.mergeSection" title="Merge slices from the same question together">
           <span class="glyphicon glyphicon-resize-small"></span>
         </button>
         <div data-bind="foreach: { data: slices, as: '_slice' }">
           <div class="slice">
             <button type="button" class="btn btn-lg btn-default split-button"
-                    data-bind="click: $root.splitSection">
+                    data-bind="click: $root.splitSection" title="Split into separate questions">
               <span class="glyphicon glyphicon-resize-full"></span>
             </button>
             <canvas data-bind="pageSliceRender: _slice"></canvas>
