@@ -255,8 +255,11 @@
 
       .finally(function() {
         if(location.hash) {
-          var st = $(location.hash).offset().top;
-          $('html, body').animate({ scrollTop: st }, 200);
+          var st = $(location.hash).offset();
+          if(st) {
+            st = st.top;
+            $('html, body').animate({ scrollTop: st }, 200);
+          }
         }
         setTimeout(function() {
           $(window).scrollspy({target: ".the-sidebar", offset: 150 }).on('focused.bs.scrollspy', function(e) {
