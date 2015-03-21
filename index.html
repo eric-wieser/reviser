@@ -149,7 +149,10 @@
       </div>
       <div class="col-md-9" style="margin-top: 40px">
         <!-- ko if: error -->
-          <div class="alert alert-danger" data-bind="text: 'Error: ' + error().msg"></div>
+          <div class="alert alert-danger">
+            <strong>Error:</strong>
+            <!-- ko text: viewModel.error().msg -->
+          </div>
         <!-- /ko -->
 
         <!-- ko foreach: { data: sections, as: '_section' } -->
@@ -199,7 +202,7 @@
     //
     PDFJS.disableWorker = true;
 
-    if(!location.search) location.search = 'P1A2009Q001';
+    if(!location.search) location.search = 'P1A2013Q002';
     var paper = location.search.substr(1);
 
     var parts = /P([1234I]+[AB])(\d{4})([QP])0*(\d+)/.exec(paper);
